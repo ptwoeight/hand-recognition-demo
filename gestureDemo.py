@@ -113,9 +113,9 @@ while True:    # "loop through every frame until ESC is pressed"
             thumb_y_diff = thumb_mcp.y - thumb_tip.y # Positive if tip is above MCP, negative if below
 
             # You can uncomment these lines when you're calibrating your thresholds.
-            print(f"Dists: T:{dist_thumb:.3f} I:{dist_index:.3f} M:{dist_middle:.3f} R:{dist_ring:.3f} P:{dist_pinky:.3f}")
+            # print(f"Dists: T:{dist_thumb:.3f} I:{dist_index:.3f} M:{dist_middle:.3f} R:{dist_ring:.3f} P:{dist_pinky:.3f}")
             # Update this print line to include the new Y-diff
-            print(f"Special Dists: IM:{dist_index_middle_tips:.3f} TI:{dist_thumb_index_tips:.3f} T_IMCP:{dist_thumb_tip_to_index_mcp:.3f} T_Y_DIFF:{thumb_y_diff:.3f}")
+            # print(f"Special Dists: IM:{dist_index_middle_tips:.3f} TI:{dist_thumb_index_tips:.3f} T_IMCP:{dist_thumb_tip_to_index_mcp:.3f} T_Y_DIFF:{thumb_y_diff:.3f}")
 
             # determine finger states (enum)
             # Logic: First, check if it's curled (overlapping). If not, then check if it's extended upwards.
