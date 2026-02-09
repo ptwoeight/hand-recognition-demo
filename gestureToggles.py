@@ -5,6 +5,12 @@ from enum import Enum
 
 YELLOW = (0, 255, 255)
 
+# Move Point class outside the loop to prevent re-defining it 30 times a second
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
 def calculate_distance(point1, point2):     # euclidian type shi
     distance = math.sqrt((point2.x - point1.x)**2 + (point2.y - point1.y)**2)
     return distance
@@ -22,13 +28,20 @@ THRESHOLD_thumb_y_extend = 0.09     # for thumb out (y-axis extendsion threshold
 
 # ↓↓ set up mediapipe
 mp_hands = mp.solutions.hands
-hand_tracker =mp_hands.Hands(static_image_mode=False, max_num_hands=2)  # allow both hands
+hand_tracker = mp_hands.Hands(static_image_mode=False, max_num_hands=2)  # allow both hands
 mp_draw = mp.solutions.drawing_utils
 
 video_capture = cv2.VideoCapture(0)     # webcam opens in a window
 previous_gesture = ""  # track the previous gesture to only print on change
 recording_active = False  # track recording state for right hand toggle
 previous_pinch_state = False  # track previous pinch state for toggle detection
+
+# --- NEW IMPROVEMENTS VARIABLES ---
+automation_smoothed = 0.0  # For smoothing the automation percentage
+smoothing_factor = 0.2     # Lower = smoother/slower, Higher = snappier
+gesture_debounce_counter = 0
+DEBOUNCE_THRESHOLD = 3     # Must hold gesture for 3 frames
+# ----------------------------------
 
 while True:     # "loop through every frame until ESC is pressed"
     success, frame = video_capture.read()
@@ -44,6 +57,14 @@ while True:     # "loop through every frame until ESC is pressed"
     if results.multi_hand_landmarks:
         for hand_idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
             hand_handedness = results.multi_handedness[hand_idx].classification[0].label  # "Left" or "Right"
+
+            # --- NORMALIZATION IMPROVEMENT ---
+            # Use distance between wrist and middle finger base to scale thresholds
+            wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
+            mcp_9 = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+            hand_scale = calculate_distance(wrist, mcp_9)
+            if hand_scale == 0: hand_scale = 0.1 # prevent div by zero
+            # ---------------------------------
 
             # ↓↓ the actual hand landmarks drawn ↓↓
             mp_draw.draw_landmarks(
@@ -187,12 +208,6 @@ while True:     # "loop through every frame until ESC is pressed"
                 midpoint_x = (middle_tip.x + ring_tip.x) / 2
                 midpoint_y = (middle_tip.y + ring_tip.y) / 2
                 
-                # Create a simple object for the midpoint
-                class Point:
-                    def __init__(self, x, y):
-                        self.x = x
-                        self.y = y
-                
                 midpoint = Point(midpoint_x, midpoint_y)
                 
                 # Calculate distance between thumb and midpoint (automation percentage)
@@ -204,9 +219,13 @@ while True:     # "loop through every frame until ESC is pressed"
                 
                 # Calculate percentage (mapped from min_distance to max_distance)
                 if fingers_together:
-                    automation_percentage = min(100, max(0, ((thumb_to_midpoint - min_distance) / (max_distance - min_distance)) * 100))
+                    raw_percentage = min(100, max(0, ((thumb_to_midpoint - min_distance) / (max_distance - min_distance)) * 100))
+                    # LERP smoothing: value = old + (new - old) * factor
+                    automation_smoothed += (raw_percentage - automation_smoothed) * smoothing_factor
+                    automation_percentage = automation_smoothed
                 else:
                     automation_percentage = 0  # reset to 0 if fingers aren't together
+                    automation_smoothed = 0 # reset smoothing
                 
                 # Calculate distance between thumb and index (record toggle)
                 thumb_to_index = calculate_distance(thumb_tip, index_tip)
@@ -250,9 +269,3 @@ while True:     # "loop through every frame until ESC is pressed"
 # cleanup baso
 video_capture.release()
 cv2.destroyAllWindows()
-
-
-
-
-
-
