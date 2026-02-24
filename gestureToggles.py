@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import math
 from enum import Enum
+from midi_out import MidiManager
 
 YELLOW = (0, 255, 255)
 
@@ -42,6 +43,8 @@ smoothing_factor = 0.2     # Lower = smoother/slower, Higher = snappier
 gesture_debounce_counter = 0
 DEBOUNCE_THRESHOLD = 3     # Must hold gesture for 3 frames
 # ----------------------------------
+
+midi_handler = MidiManager('Gesture Port')
 
 while True:     # "loop through every frame until ESC is pressed"
     success, frame = video_capture.read()
@@ -223,6 +226,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     # LERP smoothing: value = old + (new - old) * factor
                     automation_smoothed += (raw_percentage - automation_smoothed) * smoothing_factor
                     automation_percentage = automation_smoothed
+
+                    midi_handler.send_automation(automation_percentage)
                 else:
                     automation_percentage = 0  # reset to 0 if fingers aren't together
                     automation_smoothed = 0 # reset smoothing
