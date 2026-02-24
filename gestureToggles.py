@@ -144,6 +144,9 @@ while True:     # "loop through every frame until ESC is pressed"
             # idk whats the best for automaticity
             # best so far is: index, MIDDLE, middle+ring, ring+pinky OR index, INDEX+MIDDLE, middle+ring, ring+pinky
             # rn its index, middle, ring, middle+ring, ring+pinky
+            """
+             ★ PAAAAAT OVER HERE!!!! : cc_number for inserts and what not are STILL MAGIC NUMBERS, change them when functional
+            """
 
             if hand_handedness == "Left":
                 # ↓↓ LEFT HAND: TOGGLE SYSTEM ↓↓
@@ -153,6 +156,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Index: Insert 1"
                     if gesture_label != previous_gesture:
+                        midi_handler.set_active_insert(1)
+                        midi_handler.send_toggle(cc_number=21, state=True)  # ★
                         print("TOGGLE: Insert 1")
                         previous_gesture = gesture_label
                 elif (index_state == FingerState.EXTENDED and
@@ -161,6 +166,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Middle: Insert 2"
                     if gesture_label != previous_gesture:
+                        midi_handler.set_active_insert(2)
+                        midi_handler.send_toggle(cc_number=22, state=True)  # ★
                         print("TOGGLE: Insert 2")
                         previous_gesture = gesture_label
                 elif (index_state == FingerState.EXTENDED and
@@ -169,6 +176,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.EXTENDED):     #idk if the extend check is necessary
                     gesture_label = "Ring: Insert 3"
                     if gesture_label != previous_gesture:
+                        midi_handler.set_active_insert(3)
+                        midi_handler.send_toggle(cc_number=23, state=True)  # ★
                         print("TOGGLE: Insert 3")
                         previous_gesture = gesture_label
                 elif (index_state == FingerState.EXTENDED and
@@ -177,6 +186,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Middle+Ring: Insert 4"
                     if gesture_label != previous_gesture:
+                        midi_handler.set_active_insert(4)
+                        midi_handler.send_toggle(cc_number=24, state=True)  # ★
                         print("TOGGLE: Insert 4")
                         previous_gesture = gesture_label
                 elif (index_state == FingerState.EXTENDED and
@@ -185,6 +196,8 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.CURLED):
                     gesture_label = "Ring+Pinky: Insert 5"
                     if gesture_label != previous_gesture:
+                        midi_handler.set_active_insert(5)
+                        midi_handler.send_toggle(cc_number=25, state=True)  # ★
                         print("TOGGLE: Insert 5")
                         previous_gesture = gesture_label
                 elif (thumb_state == FingerState.CURLED and
@@ -194,7 +207,10 @@ while True:     # "loop through every frame until ESC is pressed"
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Toggle: RECORD"
                     if gesture_label != previous_gesture:
-                        print("TOGGLE: Insert Record")
+                        # MAP: Insert 1 Record = CC 31, Insert 2 Record = CC 32, etc.
+                        record_cc = 30 + midi_handler.active_insert 
+                        midi_handler.send_toggle(cc_number=record_cc, state=True)
+                        print(f"ARMING: Insert {midi_handler.active_insert}")
                         previous_gesture = gesture_label
                 else:
                     gesture_label = "No Toggle Detected."
