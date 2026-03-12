@@ -240,61 +240,38 @@ while True:     # "loop through every frame until ESC is pressed"
                 previous_gesture = gesture_label
 
             else:
-                # ↓↓ RIGHT HAND: AUTOMATION CONTROL ↓↓
+                # ↓↓ RIGHT HAND: VOLUME AUTOMATION ONLY ↓↓
                 
-                # automation mode (middle+ring tips together)
                 middle_ring_distance = calculate_distance(middle_tip, ring_tip)
                 middle_ring_threshold = 0.05 
                 automation_mode_active = middle_ring_distance < middle_ring_threshold
                 
-                # automation slider (vert distance)
                 if automation_mode_active:
-                    # calculate midpoint between two fingers (stable tracking point)
                     midpoint_x = (middle_tip.x + ring_tip.x) / 2
                     midpoint_y = (middle_tip.y + ring_tip.y) / 2
                     midpoint = Point(midpoint_x, midpoint_y)
                     
-                    thumb_to_midpoint = calculate_distance(thumb_tip, midpoint)     # distance from thumb to midpoint
+                    thumb_to_midpoint = calculate_distance(thumb_tip, midpoint)
                     
-                    # mapping logic: min (0.02) to max (0.35) distance -> 0 to 100%
+                    # mapping 0.02 to 0.35 distance -> 0 to 100%
                     min_dist, max_dist = 0.02, 0.35
                     raw_percentage = min(100, max(0, ((thumb_to_midpoint - min_dist) / (max_dist - min_dist)) * 100))
                     
-                    if raw_percentage < 5: raw_percentage = 0   # snap to zero if hand is super close for stability
-                    automation_smoothed += (raw_percentage - automation_smoothed) * SMOOTHING_FACTOR    # smoothing (LERP) to prevent "jittery" midi knobs in fl
+                    if raw_percentage < 5: raw_percentage = 0  # Snap to zero
                     
-                    # send midi 
+                    automation_smoothed += (raw_percentage - automation_smoothed) * SMOOTHING_FACTOR
+                    
+                    # send midi to the volume fader
                     midi_handler.send_automation(automation_smoothed, AUTOMATION_CC)
-                    gesture_label = f"Auto: {automation_smoothed:.0f}%"
+                    gesture_label = f"Volume: {automation_smoothed:.0f}%"
                 else:
-                    # reset smoothing when hand is relaxed to avoid "jumping" values
-                    automation_smoothed = 0
-                    gesture_label = "Touch Middle + Ring"
+                    gesture_label = "Pinch Middle+Ring for Vol"
 
-                # record automation toggle (index curled)
-                is_index_curled = (index_state == FingerState.CURLED)
-                
-                if is_index_curled and not previous_pinch_state:
-                    recording_active = not recording_active
-                    
-                    # send toggle cc
-                    target_arm_cc = ARM_BASE_CC + midi_handler.active_insert
-                    midi_handler.send_toggle(cc_number=target_arm_cc, state=recording_active)
-                    print(f"RECORDING STATE: {'ON' if recording_active else 'OFF'}")
-                
-                # save state for next frame
-                previous_pinch_state = is_index_curled 
-
-                # visual feedback for automation mode + arm state
+                # visual feedback
                 if automation_mode_active:
                     thumb_pos = (int(thumb_tip.x * width), int(thumb_tip.y * height))
                     midpoint_pos = (int(midpoint.x * width), int(midpoint.y * height))
-                    
-                    line_color = (0, 255, 0) if recording_active else YELLOW
-                    cv2.line(frame, thumb_pos, midpoint_pos, line_color, 2)
-                    
-                    if recording_active:
-                        gesture_label += " [ARMED]"
+                    cv2.line(frame, thumb_pos, midpoint_pos, YELLOW, 2)
 
             cv2.putText(frame, gesture_label, (x_min, y_min - 10), cv2. FONT_HERSHEY_SIMPLEX, 1, YELLOW, 2)
 

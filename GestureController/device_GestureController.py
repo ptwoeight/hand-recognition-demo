@@ -1,29 +1,31 @@
 # name=Gesture Controller Script
-
 import mixer
 
-# CC_Number : Insert_Index
 CC_INSERT_MAP = {
-    21: 1, 22: 2, 23: 3, 24: 4, 25: 5,  # Mute/Enable Range
+    21: 1, 22: 2, 23: 3, 24: 4, 25: 5,  # Selection Range
     31: 1, 32: 2, 33: 3, 34: 4, 35: 5   # Arming Range
 }
+AUTOMATION_CC = 20
 
 def OnControlChange(e):
-    # Check if the incoming CC is in our map
-    if e.data1 in CC_INSERT_MAP:
+    # LOGIC A: Change Track Selection (CCs 21-25)
+    if e.data1 in CC_INSERT_MAP and 21 <= e.data1 <= 25:
         target_insert = CC_INSERT_MAP[e.data1]
-        
-        # LOGIC A: Toggle Mute/Enable (CCs 21-25)
-        if 21 <= e.data1 <= 25:
-            current_state = mixer.isTrackEnabled(target_insert)
-            mixer.enableTrack(target_insert, not current_state)
-            print(f"Handled CC {e.data1}: Toggled Mute on Insert {target_insert}")
-        
-        # LOGIC B: Toggle Arming (CCs 31-35)
-        elif 31 <= e.data1 <= 35:
-            is_armed = mixer.isTrackArmed(target_insert)
-            mixer.armTrack(target_insert, not is_armed)
-            print(f"Handled CC {e.data1}: Toggled Arm on Insert {target_insert}")
-        
-        # Mark as handled so FL doesn't use generic mapping
+        mixer.setTrackNumber(target_insert)
+        e.handled = True
+
+    # LOGIC B: Toggle Arming (CCs 31-35)
+    elif e.data1 in CC_INSERT_MAP and 31 <= e.data1 <= 35:
+        target_insert = CC_INSERT_MAP[e.data1]
+        is_armed = mixer.isTrackArmed(target_insert)
+        mixer.armTrack(target_insert, not is_armed)
+        e.handled = True
+
+    # LOGIC C: Dynamic Volume Automation (CC 20)
+    elif e.data1 == AUTOMATION_CC:
+        # This targets the CURRENTLY SELECTED track's volume fader
+        current_track = mixer.trackNumber()
+        # Scale MIDI 0-127 to FL's internal 0.0-1.0 float
+        volume_val = e.data2 / 127 
+        mixer.setTrackVolume(current_track, volume_val)
         e.handled = True
