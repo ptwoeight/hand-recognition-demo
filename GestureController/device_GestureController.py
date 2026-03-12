@@ -4,34 +4,26 @@ import mixer
 
 # CC_Number : Insert_Index
 CC_INSERT_MAP = {
-    21: 1,
-    22: 2,
-    23: 3, 
-    24: 4,
-    25: 5
+    21: 1, 22: 2, 23: 3, 24: 4, 25: 5,  # Mute/Enable Range
+    31: 1, 32: 2, 33: 3, 34: 4, 35: 5   # Arming Range
 }
-ARM_CC = 35
 
 def OnControlChange(e):
-    # 1. Filter for our specific CCs
+    # Check if the incoming CC is in our map
     if e.data1 in CC_INSERT_MAP:
         target_insert = CC_INSERT_MAP[e.data1]
         
-        # Get and Toggle state
-        current_state = mixer.isTrackEnabled(target_insert)
-        mixer.enableTrack(target_insert, not current_state)
+        # LOGIC A: Toggle Mute/Enable (CCs 21-25)
+        if 21 <= e.data1 <= 25:
+            current_state = mixer.isTrackEnabled(target_insert)
+            mixer.enableTrack(target_insert, not current_state)
+            print(f"Handled CC {e.data1}: Toggled Mute on Insert {target_insert}")
         
-        # This will show up in the Script Output window
-        print(f"Handled CC {e.data1}: Toggled Insert {target_insert}")
+        # LOGIC B: Toggle Arming (CCs 31-35)
+        elif 31 <= e.data1 <= 35:
+            is_armed = mixer.isTrackArmed(target_insert)
+            mixer.armTrack(target_insert, not is_armed)
+            print(f"Handled CC {e.data1}: Toggled Arm on Insert {target_insert}")
         
-        e.handled = True
-
-    # 2. Handle Arming
-    elif e.data1 == ARM_CC:
-        current_track = mixer.trackNumber()
-        is_armed = mixer.isTrackArmed(current_track)
-        mixer.armTrack(current_track, not is_armed)
-        
-        print(f"Handled CC {e.data1}: Toggled Arm on Track {current_track}")
-        
+        # Mark as handled so FL doesn't use generic mapping
         e.handled = True

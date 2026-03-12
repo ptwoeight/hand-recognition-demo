@@ -4,9 +4,30 @@ import math
 from enum import Enum
 from midi_out import MidiManager
 
-YELLOW = (0, 255, 255)
+# == [1] CONFIGS + CONSTANTS == #
 
-# Move Point class outside the loop to prevent re-defining it 30 times a second
+# midi cc values: using undefined 20-31
+INSERT_1_CC = 21
+INSERT_2_CC = 22
+INSERT_3_CC = 23
+INSERT_4_CC = 24
+INSERT_5_CC = 25
+ARM_BASE_CC = 30  # final cc = 30 + active_insert
+AUTOMATION_CC = 20
+
+# tracking + thresholds (mine)
+YELLOW = (0, 255, 255)
+THRESHOLD_extended = 0.12
+THRESHOLD_curled = 0.03
+THRESHOLD_thumb_curl = 0.02    # max dist for thumb tip to index MCP when curled
+THRESHOLD_thumb_y_extend = 0.09     # for thumb out (y-axis extendsion threshold)
+SMOOTHING_FACTOR = 0.2     # lower = smoother/slower, higher = snappier
+
+class FingerState(Enum):
+    UNKNOWN = 0
+    EXTENDED = 1
+    CURLED = 2
+
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -16,36 +37,39 @@ def calculate_distance(point1, point2):     # euclidian type shi
     distance = math.sqrt((point2.x - point1.x)**2 + (point2.y - point1.y)**2)
     return distance
 
-class FingerState(Enum):
-    UNKNOWN = 0
-    EXTENDED = 1
-    CURLED = 2
+# == [2] INITIALISING HARDWARE (in order)== #
+video_capture = cv2.VideoCapture(0)   # webcam init
+if not video_capture.isOpened():
+    print("FATAL ERROR: System cannot access webcam.")
+    exit()
 
-# ↓↓ my finger thresholds ↓↓
-THRESHOLD_extended = 0.12
-THRESHOLD_curled = 0.03
-THRESHOLD_thumb_curl = 0.02    # max dist for thumb tip to index MCP when curled
-THRESHOLD_thumb_y_extend = 0.09     # for thumb out (y-axis extendsion threshold)
+midi_handler = MidiManager('FLGesture')   # MIDI init - ensures a busy MIDI port doesn't crash cam window
 
-# ↓↓ set up mediapipe
+# --- TERMINAL CONNECTION CHECK ---
+if midi_handler.output is not None:
+    print("----------------------------------------------")
+    print("✅ SUCCESS: MIDI Bridge 'FLGesture' is ACTIVE")
+    print("Status: Handshakes with FL Studio are ready.")
+    print("----------------------------------------------")
+else:
+    print("----------------------------------------------")
+    print("⚠️  WARNING: MIDI Bridge NOT FOUND")
+    print("Status: Camera will work, but no MIDI will be sent.")
+    print("Action: Ensure loopMIDI is running and port is named correctly.")
+    print("----------------------------------------------")
+
+# set up mediapipe
 mp_hands = mp.solutions.hands
 hand_tracker = mp_hands.Hands(static_image_mode=False, max_num_hands=2)  # allow both hands
 mp_draw = mp.solutions.drawing_utils
 
-video_capture = cv2.VideoCapture(0)     # webcam opens in a window
-previous_gesture = ""  # track the previous gesture to only print on change
-recording_active = False  # track recording state for right hand toggle
-previous_pinch_state = False  # track previous pinch state for toggle detection
+# == [3] GLOBAL STATE VARIABLES == #
+previous_gesture = ""
+automation_smoothed = 0.0
+previous_pinch_state = False
+recording_active = False
 
-# --- NEW IMPROVEMENTS VARIABLES ---
-automation_smoothed = 0.0  # For smoothing the automation percentage
-smoothing_factor = 0.2     # Lower = smoother/slower, Higher = snappier
-gesture_debounce_counter = 0
-DEBOUNCE_THRESHOLD = 3     # Must hold gesture for 3 frames
-# ----------------------------------
-
-midi_handler = MidiManager('GesturePort 1')
-
+# ---------- MAIN ---------- #
 while True:     # "loop through every frame until ESC is pressed"
     success, frame = video_capture.read()
     if not success: 
@@ -53,21 +77,12 @@ while True:     # "loop through every frame until ESC is pressed"
 
     frame = cv2.flip(frame, 1)  # makes the cam mirrored
     height, width, _ = frame.shape
-
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # rgb for mediapipe
     results = hand_tracker.process(rgb_frame)   # draw it baddie
 
     if results.multi_hand_landmarks:
         for hand_idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
             hand_handedness = results.multi_handedness[hand_idx].classification[0].label  # "Left" or "Right"
-
-            # --- NORMALIZATION IMPROVEMENT ---
-            # Use distance between wrist and middle finger base to scale thresholds
-            wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
-            mcp_9 = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
-            hand_scale = calculate_distance(wrist, mcp_9)
-            if hand_scale == 0: hand_scale = 0.1 # prevent div by zero
-            # ---------------------------------
 
             # ↓↓ the actual hand landmarks drawn ↓↓
             mp_draw.draw_landmarks(
@@ -150,142 +165,143 @@ while True:     # "loop through every frame until ESC is pressed"
 
             if hand_handedness == "Left":
                 # ↓↓ LEFT HAND: TOGGLE SYSTEM ↓↓
+
+                # helper variables for keeping code nice and clean
+                current_gesture_type = None
+                target_cc = None
+                target_insert = None
+
+                # insert 1
                 if (index_state == FingerState.CURLED and
                     middle_state == FingerState.EXTENDED and
                     ring_state == FingerState.EXTENDED and
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Index: Insert 1"
-                    if gesture_label != previous_gesture:
-                        midi_handler.set_active_insert(1)
-                        midi_handler.send_toggle(cc_number=21, state=True)  # ★
-                        print("TOGGLE: Insert 1")
-                        previous_gesture = gesture_label
+                    target_cc = INSERT_1_CC
+                    target_insert = 1
+
+                # insert 2
                 elif (index_state == FingerState.EXTENDED and
                     middle_state == FingerState.CURLED and
                     ring_state == FingerState.EXTENDED and
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Middle: Insert 2"
-                    if gesture_label != previous_gesture:
-                        midi_handler.set_active_insert(2)
-                        midi_handler.send_toggle(cc_number=22, state=True)  # ★
-                        print("TOGGLE: Insert 2")
-                        previous_gesture = gesture_label
+                    target_cc = INSERT_2_CC
+                    target_insert = 2
+
+                # insert 3
                 elif (index_state == FingerState.EXTENDED and
                     middle_state == FingerState.EXTENDED and
                     ring_state == FingerState.CURLED and
                     pinky_state == FingerState.EXTENDED):     #idk if the extend check is necessary
                     gesture_label = "Ring: Insert 3"
-                    if gesture_label != previous_gesture:
-                        midi_handler.set_active_insert(3)
-                        midi_handler.send_toggle(cc_number=23, state=True)  # ★
-                        print("TOGGLE: Insert 3")
-                        previous_gesture = gesture_label
+                    target_cc = INSERT_3_CC
+                    target_insert = 3
+
+                # insert 4
                 elif (index_state == FingerState.EXTENDED and
                     middle_state == FingerState.CURLED and
                     ring_state == FingerState.CURLED and
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Middle+Ring: Insert 4"
-                    if gesture_label != previous_gesture:
-                        midi_handler.set_active_insert(4)
-                        midi_handler.send_toggle(cc_number=24, state=True)  # ★
-                        print("TOGGLE: Insert 4")
-                        previous_gesture = gesture_label
+                    target_cc = INSERT_4_CC
+                    target_insert = 4
+
+                # insert 5
                 elif (index_state == FingerState.EXTENDED and
                     middle_state == FingerState.EXTENDED and
                     ring_state == FingerState.CURLED and
                     pinky_state == FingerState.CURLED):
                     gesture_label = "Ring+Pinky: Insert 5"
-                    if gesture_label != previous_gesture:
-                        midi_handler.set_active_insert(5)
-                        midi_handler.send_toggle(cc_number=25, state=True)  # ★
-                        print("TOGGLE: Insert 5")
-                        previous_gesture = gesture_label
+                    target_cc = INSERT_5_CC
+                    target_insert = 5
+
+                # record arming
                 elif (thumb_state == FingerState.CURLED and
                     index_state == FingerState.EXTENDED and
                     middle_state == FingerState.EXTENDED and
                     ring_state == FingerState.EXTENDED and
                     pinky_state == FingerState.EXTENDED):
                     gesture_label = "Toggle: RECORD"
-                    if gesture_label != previous_gesture:
-                        # MAP: Insert 1 Record = CC 31, Insert 2 Record = CC 32, etc.
-                        record_cc = 30 + midi_handler.active_insert 
-                        midi_handler.send_toggle(cc_number=record_cc, state=True)
-                        print(f"ARMING: Insert {midi_handler.active_insert}")
-                        previous_gesture = gesture_label
+                    # uses the base (30) + the last touched insert
+                    target_cc = ARM_BASE_CC + midi_handler.active_insert
                 else:
                     gesture_label = "No Toggle Detected."
-                    previous_gesture = gesture_label
+
+                # debouncing: only send midi if the gesture just changed
+                if gesture_label != "No Toggle Detected." and gesture_label != previous_gesture:
+                    if target_insert:
+                        midi_handler.set_active_insert(target_insert)
+                    
+                    # sends midi signal through midimanager
+                    midi_handler.send_toggle(cc_number=target_cc, state=True)
+                    print(f"MIDI SENT: {gesture_label} on CC {target_cc}")
+
+                previous_gesture = gesture_label
 
             else:
                 # ↓↓ RIGHT HAND: AUTOMATION CONTROL ↓↓
-                # Check if middle and ring tips are together
+                
+                # automation mode (middle+ring tips together)
                 middle_ring_distance = calculate_distance(middle_tip, ring_tip)
-                middle_ring_threshold = 0.05  # threshold for fingers being "together"
-                fingers_together = middle_ring_distance < middle_ring_threshold
+                middle_ring_threshold = 0.05 
+                automation_mode_active = middle_ring_distance < middle_ring_threshold
                 
-                # Calculate midpoint between middle and ring tips
-                midpoint_x = (middle_tip.x + ring_tip.x) / 2
-                midpoint_y = (middle_tip.y + ring_tip.y) / 2
-                
-                midpoint = Point(midpoint_x, midpoint_y)
-                
-                # Calculate distance between thumb and midpoint (automation percentage)
-                thumb_to_midpoint = calculate_distance(thumb_tip, midpoint)
-                
-                # Define min and max distance for percentage calculation
-                min_distance = 0.02  # when fingers are touching = 0%
-                max_distance = 0.35  # when fully extended = 100%
-                
-                # Calculate percentage (mapped from min_distance to max_distance)
-                if fingers_together:
-                    raw_percentage = min(100, max(0, ((thumb_to_midpoint - min_distance) / (max_distance - min_distance)) * 100))
-                    # LERP smoothing: value = old + (new - old) * factor
-                    automation_smoothed += (raw_percentage - automation_smoothed) * smoothing_factor
-                    automation_percentage = automation_smoothed
-
-                    midi_handler.send_automation(automation_percentage)
+                # automation slider (vert distance)
+                if automation_mode_active:
+                    # calculate midpoint between two fingers (stable tracking point)
+                    midpoint_x = (middle_tip.x + ring_tip.x) / 2
+                    midpoint_y = (middle_tip.y + ring_tip.y) / 2
+                    midpoint = Point(midpoint_x, midpoint_y)
+                    
+                    thumb_to_midpoint = calculate_distance(thumb_tip, midpoint)     # distance from thumb to midpoint
+                    
+                    # mapping logic: min (0.02) to max (0.35) distance -> 0 to 100%
+                    min_dist, max_dist = 0.02, 0.35
+                    raw_percentage = min(100, max(0, ((thumb_to_midpoint - min_dist) / (max_dist - min_dist)) * 100))
+                    
+                    if raw_percentage < 5: raw_percentage = 0   # snap to zero if hand is super close for stability
+                    automation_smoothed += (raw_percentage - automation_smoothed) * SMOOTHING_FACTOR    # smoothing (LERP) to prevent "jittery" midi knobs in fl
+                    
+                    # send midi 
+                    midi_handler.send_automation(automation_smoothed, AUTOMATION_CC)
+                    gesture_label = f"Auto: {automation_smoothed:.0f}%"
                 else:
-                    automation_percentage = 0  # reset to 0 if fingers aren't together
-                    automation_smoothed = 0 # reset smoothing
+                    # reset smoothing when hand is relaxed to avoid "jumping" values
+                    automation_smoothed = 0
+                    gesture_label = "Touch Middle + Ring"
+
+                # record automation toggle (index curled)
+                is_index_curled = (index_state == FingerState.CURLED)
                 
-                # Calculate distance between thumb and index (record toggle)
-                thumb_to_index = calculate_distance(thumb_tip, index_tip)
-                record_toggle_threshold = 0.05
-                is_pinched = thumb_to_index < record_toggle_threshold
-                
-                # Toggle recording state only on transition from not pinched to pinched
-                if is_pinched and not previous_pinch_state:
+                if is_index_curled and not previous_pinch_state:
                     recording_active = not recording_active
-                    if recording_active:
-                        print("RECORDING: ON")
-                    else:
-                        print("RECORDING: OFF")
-                previous_pinch_state = is_pinched
+                    
+                    # send toggle cc
+                    target_arm_cc = ARM_BASE_CC + midi_handler.active_insert
+                    midi_handler.send_toggle(cc_number=target_arm_cc, state=recording_active)
+                    print(f"RECORDING STATE: {'ON' if recording_active else 'OFF'}")
                 
-                # Only draw automation line if middle and ring are together
-                if fingers_together:
-                    # Draw line between thumb and midpoint
+                # save state for next frame
+                previous_pinch_state = is_index_curled 
+
+                # visual feedback for automation mode + arm state
+                if automation_mode_active:
                     thumb_pos = (int(thumb_tip.x * width), int(thumb_tip.y * height))
                     midpoint_pos = (int(midpoint.x * width), int(midpoint.y * height))
-                    line_color = (0, 255, 0) if recording_active else YELLOW  # Green if recording, yellow if not
-                    cv2.line(frame, thumb_pos, midpoint_pos, line_color, 1)
                     
-                    # Draw circles at endpoints
-                    cv2.circle(frame, thumb_pos, 5, line_color, -1)
-                    cv2.circle(frame, midpoint_pos, 5, line_color, -1)
+                    line_color = (0, 255, 0) if recording_active else YELLOW
+                    cv2.line(frame, thumb_pos, midpoint_pos, line_color, 2)
                     
-                    # Display automation percentage
-                    gesture_label = f"Automation: {automation_percentage:.0f}%"
                     if recording_active:
-                        gesture_label += " [RECORDING]"
-                else:
-                    gesture_label = "Position middle + ring together"
+                        gesture_label += " [ARMED]"
 
             cv2.putText(frame, gesture_label, (x_min, y_min - 10), cv2. FONT_HERSHEY_SIMPLEX, 1, YELLOW, 2)
 
     cv2.imshow("Gesture Toggle Test", frame)
     if cv2.waitKey(1) & 0xFF == 27:    # esc to quit
         break
+    
         
 # cleanup baso
 video_capture.release()
