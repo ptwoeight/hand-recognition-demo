@@ -44,7 +44,7 @@ gesture_debounce_counter = 0
 DEBOUNCE_THRESHOLD = 3     # Must hold gesture for 3 frames
 # ----------------------------------
 
-midi_handler = MidiManager('Gesture Port')
+midi_handler = MidiManager('GesturePort 1')
 
 while True:     # "loop through every frame until ESC is pressed"
     success, frame = video_capture.read()
