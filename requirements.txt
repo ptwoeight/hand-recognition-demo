@@ -1,4 +1,17 @@
-opencv-python
-mediapipe
-mido
-pygame
+# MIDI & Drivers
+mido==1.3.3
+pygame==2.6.1
+python-rtmidi==1.5.8
+
+# Computer Vision & Hand Tracking
+mediapipe==0.10.13
+opencv-python==4.13.0.92
+opencv-contrib-python==4.13.0.92
+
+# Core Math (The "Fix")
+numpy==2.4.3
+
+# Utilities
+protobuf==4.25.8
+cffi==2.0.0
+sounddevice==0.5.5
