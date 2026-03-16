@@ -1,4 +1,4 @@
-# name=Gesture Controller Script
+# name=Gesture Controller Script (ARM)
 import mixer
 
 CC_INSERT_MAP = {
