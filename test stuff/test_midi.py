@@ -17,7 +17,7 @@ print(f"Ports found: {available_ports}")
 
 # 2. Smart Search: Look for ANY port containing our name
 # This solves the "FLGesturePort 1 1" issue automatically
-target_substring = 'FLGesture' 
+target_substring = 'TestingFLPLSOMG' 
 matches = [p for p in available_ports if target_substring in p]
 
 if matches:

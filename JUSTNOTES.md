@@ -12,13 +12,14 @@
 
 # config: toggle mute
 
-- left hand toggles mute on selected insert
-  - inserts 1-5: thumb, index, mid, mid + ring, ring + pinky
+- left hand:
+  - on index, mid, ring, pinky down, select insert to left of currently selected
+  - on thumb down, select insert to right of currently selected
+    _there shouldnt be a limit to h ow many they can go left and right, if it just hits 1 and tries go left it just cycles back_
 
-- right hand functions:
-  - index: select insert on left of current
-  - mid + ring + pinky: select insert on right of current
-  - thumb: toggle arm on selected insert
+- right hand:
+  - on index, mid, ring, pinky down, toggle mute selected insert
+  - on thumb down, toggle arm on selected insert
 
 ---
 
