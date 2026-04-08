@@ -96,24 +96,34 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
             previous_gesture = gesture_label
 
     else:
+        mid_straight = dist_middle > THRESHOLD_extended
+        rng_straight = dist_ring > THRESHOLD_extended
+        pky_straight = dist_pinky > THRESHOLD_extended
+        
+        # lock condition (mid ring pinky straight)
+        automation_locked = mid_straight and rng_straight and pky_straight
+
         thumb_pos = (int(thumb_tip.x * width), int(thumb_tip.y * height))
         index_pos = (int(index_tip.x * width), int(index_tip.y * height))
 
-        cv2.line(frame, thumb_pos, index_pos, PINK, 2)
+        if not automation_locked:
+            cv2.line(frame, thumb_pos, index_pos, PINK, 2)
 
-        thumb_to_index_dist = calculate_distance(thumb_tip, index_tip)
-        
-        raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / (0.28 - 0.02)) * 125))
-        
-        if raw_perc < 5: 
-            raw_perc = 0
+            thumb_to_index_dist = calculate_distance(thumb_tip, index_tip)
             
-        automation_smoothed += (raw_perc - automation_smoothed) * SMOOTHING_FACTOR
+            raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / (0.28 - 0.02)) * 125))
+            
+            if raw_perc < 5: 
+                raw_perc = 0
+                
+            automation_smoothed += (raw_perc - automation_smoothed) * SMOOTHING_FACTOR
+            
+            # Send MIDI only when NOT locked
+            midi_handler.send_automation(automation_smoothed, AUTOMATION_CC)
+            gesture_label = f"Volume: {automation_smoothed:.0f}%"
         
-        midi_handler.send_automation(automation_smoothed, AUTOMATION_CC)
-        
-        gesture_label = f"Volume: {automation_smoothed:.0f}%"
-
-    return gesture_label
+        else:
+            cv2.line(frame, thumb_pos, index_pos, (255, 255, 0), 1) # Cyan line for lock
+            gesture_label = f"LOCKED: {automation_smoothed:.0f}%"
 
     return gesture_label

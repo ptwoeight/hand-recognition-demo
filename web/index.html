@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gesture MIDI Controller</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>FL Gesture Controller</h1>
+        
+        <div class="mode-selector">
+            <button onclick="setMode('ARM')" id="btn-arm" class="active">ARM MODE</button>
+            <button onclick="setMode('MUTE')" id="btn-mute">MUTE MODE</button>
+        </div>
+
+        <div class="status-panel">
+            <p>Active Profile: <span id="current-mode-display">ARMING</span></p>
+        </div>
+
+        <button onclick="stopApp()" class="close-btn">QUIT</button>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            // Call the Python function we "exposed"
+            eel.change_mode(mode);
+            
+            // Update UI visuals
+            document.querySelector('#current-mode-display').innerText = 
+                mode === 'ARM' ? 'ARMING' : 'MUTING';
+            
+            document.querySelector('#btn-arm').className = mode === 'ARM' ? 'active' : '';
+            document.querySelector('#btn-mute').className = mode === 'MUTE' ? 'active' : '';
+        }
+
+        function stopApp() {
+            eel.stop_application()();
+            window.close();
+        }
+    </script>
+</body>
+</html>
