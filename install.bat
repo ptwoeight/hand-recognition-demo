@@ -1,6 +1,5 @@
 @echo off
-echo Installing Python dependencies for Vocal FX Controller...
+echo Installing dependencies...
 pip install -r requirements.txt
-echo.
-echo Please ensure loopMIDI is installed and a port named 'TestingFLPLSOMG' is created.
+echo Installation Complete! You can now run the app (ATTENTION: Please run in Administrator Mode).
 pause

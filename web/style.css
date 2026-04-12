@@ -1,40 +1,138 @@
+:root {
+    --fl-pink: rgb(222, 29, 93);
+    --bg-dark: #121212;
+    --panel-bg: #1e1e1e;
+}
+
 body {
-    background-color: #1e1e1e;
+    background-color: var(--bg-dark);
     color: white;
     font-family: 'Trebuchet MS', sans-serif;
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    margin: 0;
 }
 
 .container {
+    background: var(--panel-bg);
+    padding: 3rem;
+    border-radius: 20px;
+    border: 1px solid #333;
     text-align: center;
-    background: #2d2d2d;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    width: 400px;
+}
+
+.glow-text {
+    color: var(--fl-pink);
+    text-shadow: 0 0 15px var(--fl-pink);
+    letter-spacing: 5px;
 }
 
 button {
-    font-family: 'Trebuchet MS', sans-serif;
-    background: #444;
-    color: white;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
     border: none;
-    padding: 15px 30px;
-    margin: 10px;
-    border-radius: 5px;
-    cursor: pointer;
+    border-radius: 8px;
+    background: #333;
+    color: white;
     font-weight: bold;
-    transition: 0.3s;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-button.active {
-    background: #ff7e00; /* FL Studio Orange */
+button:hover {
+    background: #444;
 }
 
-.close-btn {
-    margin-top: 30px;
-    background: #aa0000;
+.primary-btn { border: 1px solid var(--fl-pink); }
+.primary-btn:hover { background: var(--fl-pink); }
+
+.calib-box {
+    background: #111;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+#step-indicator {
+    margin-top: 10px;
+    color: var(--fl-pink);
+    font-weight: bold;
+}
+
+.camera-setup {
+    margin: 20px 0;
+    padding: 15px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+#camera-select {
+    background: #2a2a2a;
+    color: rgb(222, 29, 93);
+    border: 1px solid #444;
+    padding: 5px;
+    border-radius: 4px;
+    margin: 0 10px;
+}
+
+.small-btn {
+    width: auto; 
+    padding: 5px 15px;
+    font-size: 0.8rem;
+    background: #444;
+}
+
+.small-btn:hover {
+    background: #555;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-group button {
+    margin: 0; /* Remove default margins to align better */
+}
+
+.warning-box {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff4444;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.download-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: white;
+    background: #444;
+    padding: 5px 10px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 0.75rem;
+}
+
+.download-link:hover {
+    background: var(--fl-pink);
+}
+
+#start-btn:disabled {
+    cursor: not-allowed;
 }

@@ -8,8 +8,8 @@ ARM_BASE_CC = 30    # CC 31-35 (Arm)
 SELECT_BASE_CC = 20 # CC 21-25 (Select)
 
 PINK = (120, 29, 222)
-THRESHOLD_extended = 0.12
-THRESHOLD_thumb_curl = 0.02
+""" THRESHOLD_extended = 0.12
+THRESHOLD_thumb_curl = 0.02 """
 
 class FingerState(Enum):
     UNKNOWN = 0
@@ -21,7 +21,7 @@ def calculate_distance(point1, point2):
 
 previous_gesture = ""
 
-def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, mp_hands, frame):
+def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, mp_hands, frame, state):
     global previous_gesture
     
     lm = hand_landmarks.landmark
@@ -33,15 +33,15 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
     ring_base, pinky_base = lm[13], lm[17]
 
     # Finger states (Curled = Down)
-    idx_down = calculate_distance(index_tip, index_base) < THRESHOLD_extended
-    mid_down = calculate_distance(middle_tip, middle_base) < THRESHOLD_extended
-    rng_down = calculate_distance(ring_tip, ring_base) < THRESHOLD_extended
-    pky_down = calculate_distance(pinky_tip, pinky_base) < THRESHOLD_extended
+    idx_down = calculate_distance(index_tip, index_base) < state.calib_curled
+    mid_down = calculate_distance(middle_tip, middle_base) < state.calib_curled
+    rng_down = calculate_distance(ring_tip, ring_base) < state.calib_curled
+    pky_down = calculate_distance(pinky_tip, pinky_base) < state.calib_curled
 
     # Thumb logic
     thumb_x_diff = thumb_tip.x - index_mcp.x
     if hand_handedness == "Right": thumb_x_diff = -thumb_x_diff
-    thumb_down = thumb_x_diff < THRESHOLD_thumb_curl
+    thumb_down = thumb_x_diff < state.calib_thumb_curl
 
     gesture_label = "Scanning..."
     target_cc = None

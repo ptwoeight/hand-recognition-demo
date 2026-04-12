@@ -12,10 +12,10 @@ ARM_BASE_CC = 30
 AUTOMATION_CC = 20
 
 PINK = (120, 29, 222)
-THRESHOLD_extended = 0.12
+""" THRESHOLD_extended = 0.12
 THRESHOLD_thumb_curl = 0.02
 THRESHOLD_thumb_y_extend = 0.09
-SMOOTHING_FACTOR = 0.2
+SMOOTHING_FACTOR = 0.2 """
 
 class FingerState(Enum):
     UNKNOWN = 0
@@ -33,7 +33,7 @@ def calculate_distance(point1, point2):
 previous_gesture = ""
 automation_smoothed = 0.0
 
-def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, mp_hands, frame):
+def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, mp_hands, frame, state):
     global previous_gesture, automation_smoothed
     
     lm = hand_landmarks.landmark
@@ -58,17 +58,17 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
         thumb_x_diff = -thumb_x_diff
     thumb_y_diff = thumb_mcp.y - thumb_tip.y
 
-    if thumb_x_diff < THRESHOLD_thumb_curl:
+    if thumb_x_diff < state.calib_thumb_curl:
         thumb_state = FingerState.CURLED
-    elif thumb_y_diff > THRESHOLD_thumb_y_extend:
+    elif thumb_y_diff > state.calib_thumb_y_extend:
         thumb_state = FingerState.EXTENDED
     else:
         thumb_state = FingerState.UNKNOWN
 
-    index_state = FingerState.EXTENDED if dist_index > THRESHOLD_extended else FingerState.CURLED
-    middle_state = FingerState.EXTENDED if dist_middle > THRESHOLD_extended else FingerState.CURLED
-    ring_state = FingerState.EXTENDED if dist_ring > THRESHOLD_extended else FingerState.CURLED
-    pinky_state = FingerState.EXTENDED if dist_pinky > THRESHOLD_extended else FingerState.CURLED
+    index_state = FingerState.EXTENDED if dist_index > state.calib_extended else FingerState.CURLED
+    middle_state = FingerState.EXTENDED if dist_middle > state.calib_extended else FingerState.CURLED
+    ring_state = FingerState.EXTENDED if dist_ring > state.calib_extended else FingerState.CURLED
+    pinky_state = FingerState.EXTENDED if dist_pinky > state.calib_extended else FingerState.CURLED
 
     gesture_label = "No Toggle Detected."
     target_cc = None
@@ -96,9 +96,9 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
             previous_gesture = gesture_label
 
     else:
-        mid_straight = dist_middle > THRESHOLD_extended
-        rng_straight = dist_ring > THRESHOLD_extended
-        pky_straight = dist_pinky > THRESHOLD_extended
+        mid_straight = dist_middle > state.calib_extended
+        rng_straight = dist_ring > state.calib_extended
+        pky_straight = dist_pinky > state.calib_extended
         
         # lock condition (mid ring pinky straight)
         automation_locked = mid_straight and rng_straight and pky_straight
@@ -111,12 +111,14 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
 
             thumb_to_index_dist = calculate_distance(thumb_tip, index_tip)
             
-            raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / (0.28 - 0.02)) * 125))
-            
+            # raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / (0.28 - 0.02)) * 125))
+            span = state.calib_max_stretch - 0.02
+            raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / span) * 125))
+
             if raw_perc < 5: 
                 raw_perc = 0
                 
-            automation_smoothed += (raw_perc - automation_smoothed) * SMOOTHING_FACTOR
+            automation_smoothed += (raw_perc - automation_smoothed) * state.calib_smoothing_factor
             
             # Send MIDI only when NOT locked
             midi_handler.send_automation(automation_smoothed, AUTOMATION_CC)

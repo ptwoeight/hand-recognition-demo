@@ -1,43 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gesture MIDI Controller</title>
+    <title>FL Gesture Controller</title>
     <link rel="stylesheet" href="style.css">
     <script type="text/javascript" src="/eel.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>FL Gesture Controller</h1>
-        
-        <div class="mode-selector">
-            <button onclick="setMode('ARM')" id="btn-arm" class="active">ARM MODE</button>
-            <button onclick="setMode('MUTE')" id="btn-mute">MUTE MODE</button>
+        <div id="welcome-screen" class="screen">
+            <h1 class="glow-text">FL Gesture Controller</h1>
+            <p>A Virtual MIDI Controller</p>
+
+            <div id="midi-warning" class="warning-box" style="display:none;">
+                <p>⚠️ <b>loopMIDI Port Not Detected</b></p>
+                <p>Please create a port named: <span style="color:var(--fl-pink);">TestingFLPLSOMG</span></p>
+                <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank" class="download-link">Download loopMIDI</a>
+            </div>
+
+            <div class="menu-buttons">
+                <button onclick="launch('ARM')" class="primary-btn" id="start-btn">START CONTROLLER</button>
+                <button onclick="startCalib()" class="secondary-btn">HAND CALIBRATION</button>
+                <button onclick="showInstructions()" class="info-btn">SETUP INSTRUCTIONS</button>
+                <button onclick="stopApp()" class="exit-btn">EXIT</button>
+            </div>
+
+            <div class="camera-setup">
+                <label for="camera-select">Select Camera:</label>
+                <select id="camera-select" onchange="updateCamera()">
+                    <option value="0">Default Camera</option>
+                </select>
+                <button onclick="refreshCameras()" class="small-btn">Refresh List</button>
+            </div>
         </div>
 
-        <div class="status-panel">
-            <p>Active Profile: <span id="current-mode-display">ARMING</span></p>
+        <div id="instructions-screen" class="screen" style="display:none;">
+            <h2 class="glow-text">SETUP GUIDE</h2>
+            <div class="calib-box" style="text-align: left;">
+                <ol>
+                    <li>(If you haven't already) Download & Install <b>loopMIDI</b> from <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank" style="color:var(--fl-pink);">here</a>.</li>
+                    <li>Open loopMIDI and create a port named: <b style="color:var(--fl-pink);">TestingFLPLSOMG</b>.</li>
+                    <li><b>IMPORTANT:</b> Right-click loopMIDI and <b style="color:var(--fl-pink);">"Run as Administrator".</b></li>
+                    <li>Right-click this App and "Run as Administrator" to ensure MIDI communication isn't blocked.</li>
+                </ol>
+                <p style="font-size: 0.8rem; opacity: 0.7;">*Currently in BETA</p>
+            </div>
+            <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>
         </div>
 
-        <button onclick="stopApp()" class="close-btn">QUIT</button>
+        <div id="calib-screen" class="screen" style="display:none;">
+            <h2 id="calib-title">Calibration</h2>
+            <div class="calib-box">
+                <p id="calib-instruction">Initializing...</p>
+                <div id="step-indicator">Step 0 / 2</div>
+            </div>
+            <div class="button-group">
+                <button onclick="nextStep()" id="next-btn" class="primary-btn">NEXT</button>
+                <button onclick="cancelCalib()" class="exit-btn">CANCEL</button>
+            </div>
+        </div>
+
+        <div id="main-controls" class="screen" style="display:none;">
+            <div class="mode-header">
+                <button onclick="launch('ARM')" id="btn-arm">ARM MODE</button>
+                <button onclick="launch('MUTE')" id="btn-mute">MUTE MODE</button>
+            </div>
+            <div class="status-box">
+                <p>Status: <span id="ui-mode-text">ACTIVE</span></p>
+                <button onclick="showMenu()" class="back-btn">MAIN MENU</button>
+            </div>
+        </div>
     </div>
-
-    <script>
-        function setMode(mode) {
-            // Call the Python function we "exposed"
-            eel.change_mode(mode);
-            
-            // Update UI visuals
-            document.querySelector('#current-mode-display').innerText = 
-                mode === 'ARM' ? 'ARMING' : 'MUTING';
-            
-            document.querySelector('#btn-arm').className = mode === 'ARM' ? 'active' : '';
-            document.querySelector('#btn-mute').className = mode === 'MUTE' ? 'active' : '';
-        }
-
-        function stopApp() {
-            eel.stop_application()();
-            window.close();
-        }
-    </script>
+    <script src="main.js"></script>
 </body>
 </html>

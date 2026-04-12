@@ -18,3 +18,9 @@ sounddevice==0.5.5
 
 # GUI
 eel[jinja2]
+
+# Camera Grabber
+pygrabber==0.2
+
+# Check for loopMIDI
+psutil==7.2.2
