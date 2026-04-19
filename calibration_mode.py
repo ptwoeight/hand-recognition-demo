@@ -25,7 +25,8 @@ def process_calibration(hand_landmarks, state, mp_hands):
 
         state.calib_smoothing_factor = 0.2      # default for stable hands
 
-        # return "STEP 1: Curl fingers into an open fist. Click 'NEXT'."
+        return "[STEP 1] Curl fingers into an open fist"
+        
     
     # STEP 2: OPEN (EXTENDED FINGERS)
     elif state.calibration_step == 2:
@@ -34,7 +35,10 @@ def process_calibration(hand_landmarks, state, mp_hands):
         state.calib_thumb_y_extend = thumb_y_diff - 0.01
         state.calib_max_stretch = max_stretch_dist
 
-        # return "STEP 2: Stretch hand wide. Click 'NEXT'."
+        return "[STEP 2] Stretch hand wide"
     
     else:
+        print(f"STEP 1 VALUES:", round(state.calib_curled, 2), round(state.calib_thumb_curl, 2))
+        print(f"STEP 2 VALUES:", round(state.calib_extended, 2), round(state.calib_thumb_y_extend, 2), round(state.calib_max_stretch, 2))
+        
         return "CALIBRATION COMPLETE! See menu window."

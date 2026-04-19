@@ -1,3 +1,4 @@
 __pycache__/midi_out.cpython-312.pyc
 __pycache__/arm_mode.cpython-312.pyc
 __pycache__/mute_mode.cpython-312.pyc
+*.pyc

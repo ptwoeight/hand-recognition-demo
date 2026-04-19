@@ -77,15 +77,19 @@ async function nextStep() {
     let step = await eel.next_calibration_step()();
     
     if (step === 1) {
-        document.querySelector('#calib-instruction').innerText = "Curl your fingers into a loose fist (show your nails to the camera).";
+        document.querySelector('#calib-instruction').innerText = "With one hand, curl your fingers into a loose fist (show your nails to the camera).";
         document.querySelector('#step-indicator').innerText = "Step 1 / 2";
+        document.querySelector('#back-from-calib').style.display = 'none';
     } else if (step === 2) {
-        document.querySelector('#calib-instruction').innerText = "Stretch your thumb and index as wide as possible!";
+        document.querySelector('#calib-instruction').innerText = "With the same hand, stretch your fingers as wide as possible!";
         document.querySelector('#step-indicator').innerText = "Step 2 / 2";
+        document.querySelector('#back-from-calib').style.display = 'none';
     } else {
         // Step went back to 0 or finalized
-        alert("Calibration Saved!");
-        showMenu();
+        document.querySelector('#next-btn').style.display = 'none';
+        document.querySelector('#cancel-btn').style.display = 'none';
+        document.querySelector('#back-from-calib').style.display = 'block';
+        document.querySelector('#calib-instruction').innerText = "Calibration Complete!\nThreshold Data Saved.";
     }
 }
 
@@ -111,7 +115,12 @@ function hideAll() {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
 }
 
+function confirmExit()  {
+    hideAll();
+    document.querySelector('#confirm-exit-screen').style.display = 'block';
+}
+
 function stopApp() {
-    eel.stop_application()();
     window.close();
+    eel.stop_application()();
 }
