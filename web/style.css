@@ -75,7 +75,7 @@ button:hover {
 
 #camera-select {
     background: #2a2a2a;
-    color: rgb(222, 29, 93);
+    color: var(--fl-pink);
     border: 1px solid #444;
     padding: 5px;
     border-radius: 4px;
@@ -135,4 +135,24 @@ button:hover {
 
 #start-btn:disabled {
     cursor: not-allowed;
+}
+
+#ui-mode-text {
+    color: var(--fl-pink);
+}
+
+/*  */
+@keyframes popIn {
+    0% {
+        transform: scale(1.1); /* Starts slightly expanded */
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1); /* Snaps to normal size */
+        opacity: 1;
+    }
+}
+
+.screen-animate {
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }

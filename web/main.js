@@ -67,7 +67,11 @@ async function launch(mode) {
 
 async function startCalib() {
     hideAll();
-    document.querySelector('#calib-screen').style.display = 'block';
+    let calib = document.querySelector('#calib-screen');
+    calib.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void calib.offsetWidth; 
+    calib.classList.add('screen-animate'); // Re-add the class to trigger the pop
     await eel.change_mode('CALIBRATE')();
     // Reset step in python and update UI
     nextStep(); 
@@ -95,7 +99,12 @@ async function nextStep() {
 
 async function showInstructions() {
     hideAll();
-    document.querySelector('#instructions-screen').style.display = 'block';
+    let instructions = document.querySelector('#instructions-screen');
+    instructions.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void instructions.offsetWidth; 
+    instructions.classList.add('screen-animate'); // Re-add the class to trigger the pop
+    instructions.change_mode('OFF')();
 }
 
 async function cancelCalib() {
@@ -107,20 +116,60 @@ async function cancelCalib() {
 
 function showMenu() {
     hideAll();
-    document.querySelector('#welcome-screen').style.display = 'block';
+    let menu = document.querySelector('#welcome-screen');
+    menu.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void menu.offsetWidth; 
+    menu.classList.add('screen-animate'); // Re-add the class to trigger the pop
     eel.change_mode('OFF')();
 }
 
 function hideAll() {
-    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.screen').forEach(s => {
+        s.style.display = 'none';
+        s.classList.remove('screen-animate'); // Remove the animation class
+    });
 }
 
 function confirmExit()  {
     hideAll();
-    document.querySelector('#confirm-exit-screen').style.display = 'block';
+    let confirmExit = document.querySelector('#confirm-exit-screen');
+    confirmExit.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void confirmExit.offsetWidth; 
+    confirmExit.classList.add('screen-animate'); // Re-add the class to trigger the pop
+    eel.change_mode('OFF')();
 }
 
 function stopApp() {
     window.close();
     eel.stop_application()();
+}
+
+function showSettings() {
+    hideAll();
+    let settings = document.querySelector('#settings-screen');
+    settings.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void settings.offsetWidth; 
+    settings.classList.add('screen-animate'); // Re-add the class to trigger the pop
+    eel.change_mode('OFF')();
+}
+
+function showColorPicker() {
+    hideAll();
+    let color = document.querySelector('#color-screen');
+    color.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void color.offsetWidth; 
+    color.classList.add('screen-animate'); // Re-add the class to trigger the pop
+    eel.change_mode('OFF')();
+}
+
+function applyColor() {
+    let color = document.querySelector('#ui-color-picker').value;
+    // Update the CSS variable so the web UI matches the Python HUD
+    document.documentElement.style.setProperty('--fl-pink', color);
+    // Send to Python for OpenCV HUD
+    eel.update_colors(color);
 }

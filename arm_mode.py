@@ -37,16 +37,11 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
     global previous_gesture, automation_smoothed
     
     lm = hand_landmarks.landmark
-    thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
-    thumb_mcp = lm[mp_hands.HandLandmark.THUMB_MCP]
-    index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-    index_mcp = lm[mp_hands.HandLandmark.INDEX_FINGER_MCP]
-    middle_tip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
-    middle_mcp = lm[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
-    ring_tip = lm[mp_hands.HandLandmark.RING_FINGER_TIP]
-    ring_mcp = lm[mp_hands.HandLandmark.RING_FINGER_MCP]
-    pinky_tip = lm[mp_hands.HandLandmark.PINKY_TIP]
-    pinky_mcp = lm[mp_hands.HandLandmark.PINKY_MCP]
+    thumb_tip, thumb_mcp = lm[mp_hands.HandLandmark.THUMB_TIP], lm[mp_hands.HandLandmark.THUMB_MCP]
+    index_tip, index_mcp = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP], lm[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+    middle_tip, middle_mcp  = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP], lm[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+    ring_tip, ring_mcp = lm[mp_hands.HandLandmark.RING_FINGER_TIP], lm[mp_hands.HandLandmark.RING_FINGER_MCP]
+    pinky_tip, pinky_mcp = lm[mp_hands.HandLandmark.PINKY_TIP], lm[mp_hands.HandLandmark.PINKY_MCP] 
 
     dist_index = calculate_distance(index_tip, index_mcp)
     dist_middle = calculate_distance(middle_tip, middle_mcp)
@@ -70,7 +65,7 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
     ring_state = FingerState.EXTENDED if dist_ring > state.calib_extended else FingerState.CURLED
     pinky_state = FingerState.EXTENDED if dist_pinky > state.calib_extended else FingerState.CURLED
 
-    gesture_label = "No Toggle Detected."
+    gesture_label = "No Toggle Detected"
     target_cc = None
     target_insert = None
 
@@ -90,10 +85,11 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
             target_cc = ARM_BASE_CC + midi_handler.active_insert
 
         if gesture_label != "No Toggle Detected." and gesture_label != previous_gesture:
-            if target_insert:
-                midi_handler.set_active_insert(target_insert)
-            midi_handler.send_toggle(cc_number=target_cc, state=True)
-            previous_gesture = gesture_label
+            if target_cc is not None:
+                if target_insert is not None:
+                    midi_handler.set_active_insert(target_insert)
+                midi_handler.send_toggle(cc_number=target_cc, state=True)
+                previous_gesture = gesture_label
 
     else:
         mid_straight = dist_middle > state.calib_extended
@@ -107,11 +103,10 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
         index_pos = (int(index_tip.x * width), int(index_tip.y * height))
 
         if not automation_locked:
-            cv2.line(frame, thumb_pos, index_pos, PINK, 2)
+            cv2.line(frame, thumb_pos, index_pos, state.hud_color, 2)
 
             thumb_to_index_dist = calculate_distance(thumb_tip, index_tip)
             
-            # raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / (0.28 - 0.02)) * 125))
             span = state.calib_max_stretch - 0.02
             raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / span) * 125))
 

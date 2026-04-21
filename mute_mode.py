@@ -25,39 +25,40 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
     global previous_gesture
     
     lm = hand_landmarks.landmark
-    # Landmark mapping
-    thumb_tip, index_mcp = lm[4], lm[5]
-    index_tip, middle_tip = lm[8], lm[12]
-    ring_tip, pinky_tip = lm[16], lm[20]
-    index_base, middle_base = lm[5], lm[9]
-    ring_base, pinky_base = lm[13], lm[17]
+    idx_tip, idx_mcp = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP], lm[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+    mid_tip, mid_mcp = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP], lm[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+    rng_tip, rng_mcp = lm[mp_hands.HandLandmark.RING_FINGER_TIP], lm[mp_hands.HandLandmark.RING_FINGER_MCP]
+    pky_tip, pky_mcp = lm[mp_hands.HandLandmark.PINKY_TIP], lm[mp_hands.HandLandmark.PINKY_MCP]
+    thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
 
-    # Finger states (Curled = Down)
-    idx_down = calculate_distance(index_tip, index_base) < state.calib_curled
-    mid_down = calculate_distance(middle_tip, middle_base) < state.calib_curled
-    rng_down = calculate_distance(ring_tip, ring_base) < state.calib_curled
-    pky_down = calculate_distance(pinky_tip, pinky_base) < state.calib_curled
+    idx_state = FingerState.EXTENDED if calculate_distance(idx_tip, idx_mcp) > state.calib_extended else FingerState.CURLED
+    mid_state = FingerState.EXTENDED if calculate_distance(mid_tip, mid_mcp) > state.calib_extended else FingerState.CURLED
+    rng_state = FingerState.EXTENDED if calculate_distance(rng_tip, rng_mcp) > state.calib_extended else FingerState.CURLED
+    pky_state = FingerState.EXTENDED if calculate_distance(pky_tip, pky_mcp) > state.calib_extended else FingerState.CURLED
 
-    # Thumb logic
-    thumb_x_diff = thumb_tip.x - index_mcp.x
+    # 3. Thumb State Detection
+    thumb_x_diff = thumb_tip.x - idx_mcp.x
     if hand_handedness == "Right": thumb_x_diff = -thumb_x_diff
-    thumb_down = thumb_x_diff < state.calib_thumb_curl
+    thumb_curled = thumb_x_diff < state.calib_thumb_curl
 
-    gesture_label = "Scanning..."
-    target_cc = None
-
+    # 4. Gesture Logic Execution
+    all_fingers_down = (idx_state == FingerState.CURLED and mid_state == FingerState.CURLED and 
+                        rng_state == FingerState.CURLED and pky_state == FingerState.CURLED)
+    gesture_label = "No Toggle Detected"
+    target_cc = None    
+    
     # --- [RESET LOGIC (Applies to both hands)] ---
     # Check if hand is fully open (neutral state)
-    hand_open = not idx_down and not mid_down and not rng_down and not pky_down and not thumb_down
+    hand_open = not all_fingers_down and not thumb_curled
     
     if hand_open:
-        gesture_label = "Scanning..."
-        previous_gesture = "" # This "unlocks" the sensors for the next gesture
+        gesture_label = "No Toggle Detected"
+        previous_gesture = "" 
 
     # --- [LEFT HAND: NAVIGATION] ---
     if hand_handedness == "Left":
         # Move LEFT (Index, Mid, Ring, Pinky DOWN)
-        if idx_down and mid_down and rng_down and pky_down and not thumb_down:
+        if all_fingers_down and not thumb_curled:
             gesture_label = "NAV: Left (Prev)"
             if gesture_label != previous_gesture:
                 new_insert = 5 if midi_handler.active_insert <= 1 else midi_handler.active_insert - 1
@@ -66,7 +67,7 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
                 previous_gesture = gesture_label
 
         # Move RIGHT (Thumb DOWN)
-        elif thumb_down and not (idx_down and mid_down and rng_down and pky_down):
+        elif thumb_curled and not all_fingers_down:
             gesture_label = "NAV: Right (Next)"
             if gesture_label != previous_gesture:
                 new_insert = (midi_handler.active_insert % 5) + 1
@@ -77,17 +78,21 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
     # --- [RIGHT HAND: TOGGLE ACTIONS] ---
     else:
         # Toggle MUTE (All fingers down)
-        if idx_down and mid_down and rng_down and pky_down and not thumb_down:
-            gesture_label = "Action: Toggle MUTE"
+        if all_fingers_down and not thumb_curled:
+            gesture_label = "Toggle MUTE"
             if gesture_label != previous_gesture:
                 midi_handler.send_toggle(40 + midi_handler.active_insert, True)
                 previous_gesture = gesture_label
 
         # Toggle ARM (Thumb down)
-        elif thumb_down and not (idx_down and mid_down and rng_down and pky_down):
-            gesture_label = "Action: Toggle ARM"
+        elif thumb_curled and not all_fingers_down:
+            gesture_label = "Toggle ARM"
             if gesture_label != previous_gesture:
                 midi_handler.send_toggle(30 + midi_handler.active_insert, True)
                 previous_gesture = gesture_label
 
     return gesture_label
+
+
+
+

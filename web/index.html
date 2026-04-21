@@ -19,8 +19,8 @@
 
             <div class="menu-buttons">
                 <button onclick="launch('ARM')" class="primary-btn" id="start-btn">START CONTROLLER</button>
-                <button onclick="startCalib()" class="secondary-btn">HAND CALIBRATION</button>
                 <button onclick="showInstructions()" class="info-btn">SETUP INSTRUCTIONS</button>
+                <button onclick="showSettings()" class="secondary-btn">SETTINGS</button>
                 <button onclick="confirmExit()" class="exit-btn" id="first-exit">EXIT</button>
             </div>
 
@@ -47,8 +47,26 @@
             <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>
         </div>
 
+        <div id="settings-screen" class="screen" style="display:none;">
+            <h2 class="glow-text">SETTINGS</h2>
+            <div class="menu-buttons">
+                <button onclick="startCalib()" class="secondary-btn">HAND CALIBRATION</button>
+                <button onclick="showColorPicker()" class="secondary-btn">CUSTOMIZE COLORS</button>
+                <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>
+            </div>
+        </div>
+
+        <div id="color-screen" class="screen" style="display:none;">
+            <h2 class="glow-text">COLORS</h2>
+            <div class="calib-box">
+                <p>Select your HUD and Landmark color:</p>
+                <input type="color" id="ui-color-picker" value="#DE1D5D" onchange="applyColor()">
+            </div>
+            <button onclick="showSettings()" class="back-btn">BACK</button>
+        </div>
+
         <div id="calib-screen" class="screen" style="display:none;">
-            <h2 id="calib-title">Calibration</h2>
+            <h2 class="glow-text" id="calib-title">Calibration</h2>
             <div class="calib-box">
                 <p id="calib-instruction">Initializing...</p>
                 <div id="step-indicator">Step 0 / 2</div>
@@ -56,11 +74,12 @@
             <div class="button-group">
                 <button onclick="nextStep()" class="primary-btn" id="next-btn">NEXT</button>
                 <button onclick="cancelCalib()" class="exit-btn" id="cancel-btn">CANCEL</button>
-                <button onclick="showMenu()" class="back-btn" id="back-from-calib" display="none">BACK TO MENU</button>
+                <button onclick="showSettings()" class="back-btn" id="back-from-calib" display="none">BACK</button>
             </div>
         </div>
 
         <div id="main-controls" class="screen" style="display:none;">
+            <h2 class="glow-text">Mode Controller</h2>
             <div class="mode-header">
                 <button onclick="launch('ARM')" id="btn-arm">ARM MODE</button>
                 <button onclick="launch('MUTE')" id="btn-mute">MUTE MODE</button>

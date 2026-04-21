@@ -6,9 +6,9 @@ try:
     os.environ['MIDO_BACKEND'] = 'mido.backends.pygame'
     import pygame.midi
     pygame.midi.init()
-    print("✅ Successfully switched to Pygame MIDI backend.")
+    print("[SUCCESS] Switched to Pygame MIDI backend.")
 except Exception as e:
-    print(f"❌ Pygame fallback failed: {e}")
+    print(f"[ERROR] Pygame fallback failed: {e}")
 
 class MidiManager:
     def __init__(self, port_substring='FLGesture'):
@@ -26,11 +26,11 @@ class MidiManager:
             if matches:
                 actual_name = matches[0]
                 self.output = mido.open_output(actual_name)
-                print(f"✅ SUCCESS: Connected to {actual_name}")
+                print(f"[SUCCESS] Connected to {actual_name}")
             else:
-                print(f"⚠️  WARNING: No port found containing '{self.port_name}'")
+                print(f"[WARNING] No port found containing '{self.port_name}'")
         except Exception as e:
-            print(f"❌ MIDI INIT ERROR: {e}")
+            print(f"[MIDI INIT ERROR] {e}")
 
     def set_active_insert(self, insert_number):
         """Updates which mixer track is targeted by the 'Arm' gesture."""

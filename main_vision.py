@@ -1,3 +1,4 @@
+import os
 import eel
 import cv2
 import mediapipe as mp
@@ -7,7 +8,10 @@ import mute_mode
 import calibration_mode
 from pygrabber.dshow_graph import FilterGraph
 import psutil
-import rtmidi
+# import rtmidi
+
+# Forces Python to look in the folder where the script lives
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # [1] STATE CONTROLLER
 class AppState:
@@ -28,10 +32,24 @@ class AppState:
         self.calib_max_stretch  = 0.28
         self.calib_smoothing_factor = 0.2
         
+        # colour stuff
+        self.hud_color = (120, 29, 222) # Default
+        self.landmark_color = (120, 29, 222) # Default
 
 state = AppState()
 
 # [2] EEL EXPOSED FUNCTIONS
+@eel.expose
+def update_colors(hex_color):
+    # Convert Hex (#DE1D5D) to BGR for OpenCV (120, 29, 222)
+    hex_color = hex_color.lstrip('#')
+    rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    bgr = (rgb[2], rgb[1], rgb[0])
+    
+    state.hud_color = bgr
+    state.landmark_color = bgr
+    print(f"UI Colors updated to BGR: {bgr}")
+
 @eel.expose
 def check_midi_status():
     loopmidi_running = any("loopMIDI.exe" in p.name() for p in psutil.process_iter())
@@ -66,7 +84,6 @@ def get_camera_list():
             "name": name
         })
     
-    print(f"Detected Cameras: {camera_data}")
     return camera_data
 
 @eel.expose
@@ -87,7 +104,10 @@ def reset_calibration():
 @eel.expose
 def stop_application():
     state.is_running = False
+    print("-----------------")
     print("Closing Application. BYE BYE!")
+    print("-----------------")
+
 
 # [3] MAIN VISION LOOP
 def start_vision():
@@ -98,15 +118,27 @@ def start_vision():
     mp_hands = mp.solutions.hands
     hand_tracker = mp_hands.Hands(static_image_mode=False, max_num_hands=2)
     mp_draw = mp.solutions.drawing_utils
-    
-    # Colors
-    PINK = (120, 29, 222)
-    WHITE = (255, 255, 255)
+
+    selected_browser = 'firefox' # Default if config fails
+    try:
+        if os.path.exists(".browser_cfg"):
+            with open(".browser_cfg", "r") as f:
+                selected_browser = f.read().strip()
+    except Exception as e:
+        print(f"Browser config error: {e}")
+
+
+    # Get the directory where main_vision.py is located
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+    # Change the current working directory to that folder
+    os.chdir(base_path)
 
     # Initialising Eel
     eel.init('web')
     # Using 'block=False' allows the Python loop to run alongside the UI
-    eel.start('index.html', mode='firefox', block=False)
+    eel.start('index.html', mode=selected_browser, block=False)
+
 
     while state.is_running:
         eel.sleep(0.01) # Keeps UI responsive
@@ -153,28 +185,45 @@ def start_vision():
                     )
 
                 # [2] CALCULATE TEXT ALIGNMENT
-                full_text = f"{hand_handedness}: {gesture_label}"
+                full_text = f"[{hand_handedness.upper()}] {gesture_label}"
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.7
+                font_scale = 0.6
                 thickness = 2
+                (text_w, text_h), baseline = cv2.getTextSize(full_text, font, font_scale, thickness)
 
+                # Set Margin from edges (decreased to 20px for "closer to edge")
+                margin = 20 
+                WHITE = (255, 255, 255)
+                DARK_GREY = (40, 40, 40)
+                
                 if hand_handedness == "Left":
-                    # Standard Left Alignment
-                    text_pos = (50, 50)
-                    display_color = WHITE
+                    text_x, text_y = margin, (margin * 2)
+                    bg_color = DARK_GREY # dark grey
+                    text_color = WHITE
                 else:
-                    # RIGHT ALIGNMENT MATH
-                    # Get the width of the text string in pixels
-                    (text_width, text_height), baseline = cv2.getTextSize(full_text, font, font_scale, thickness)
-                    
-                    # Anchor point is the right edge (width - 50px) minus the calculated text width
-                    right_anchor = width - 50
-                    text_pos = (right_anchor - text_width, 50)
-                    display_color = PINK
+                    text_x, text_y = width - text_w - margin, (margin * 2)
+                    bg_color = DARK_GREY
+                    text_color = state.hud_color
 
-                # [3] DRAW OVERLAYS
-                cv2.putText(frame, full_text, text_pos, font, font_scale, display_color, thickness)
-                mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                # [3] DRAW SEMI-TRANSPARENT BACKGROUND
+                # Create an overlay layer for the transparency effect
+                overlay = frame.copy()
+                # Draw the rectangle box (slightly larger than the text)
+                cv2.rectangle(overlay, (text_x - 10, text_y - 25), (text_x + text_w + 10, text_y + 10), bg_color, -1)
+                
+                # Blend the overlay with the original frame (0.6 = 60% opacity)
+                alpha = 0.6
+                cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+                # [4] DRAW TEXT ON TOP
+                cv2.putText(frame, full_text, (text_x, text_y), font, font_scale, text_color, thickness)
+                mp_draw.draw_landmarks(
+                    frame, 
+                    hand_landmarks, 
+                    mp_hands.HAND_CONNECTIONS, 
+                    mp_draw.DrawingSpec(color=state.hud_color, thickness=1, circle_radius=3), 
+                    mp_draw.DrawingSpec(color=WHITE, thickness=1)
+                )
 
         # Show the processed frame
         cv2.imshow("FL Gesture Controller", frame)
