@@ -16,6 +16,9 @@ PINK = (120, 29, 222)
 THRESHOLD_thumb_curl = 0.02
 THRESHOLD_thumb_y_extend = 0.09
 SMOOTHING_FACTOR = 0.2 """
+RESTING_PINCH_OFFSET = 0.02
+MIDI_LOWER_THRESHOLD = 5
+MAX_AUTOMATION_PERC = 125
 
 class FingerState(Enum):
     UNKNOWN = 0
@@ -107,10 +110,10 @@ def process_logic(hand_landmarks, hand_handedness, midi_handler, width, height, 
 
             thumb_to_index_dist = calculate_distance(thumb_tip, index_tip)
             
-            span = state.calib_max_stretch - 0.02
-            raw_perc = min(125, max(0, ((thumb_to_index_dist - 0.02) / span) * 125))
-
-            if raw_perc < 5: 
+            span = state.calib_max_stretch - RESTING_PINCH_OFFSET
+            raw_perc = min(MAX_AUTOMATION_PERC, max(0, ((thumb_to_index_dist - RESTING_PINCH_OFFSET) / span) * MAX_AUTOMATION_PERC))
+            
+            if raw_perc < MIDI_LOWER_THRESHOLD: 
                 raw_perc = 0
                 
             automation_smoothed += (raw_perc - automation_smoothed) * state.calib_smoothing_factor

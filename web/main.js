@@ -3,6 +3,10 @@ window.onload = function() {
     verifyMidi();
 };
 
+// ------------------
+let currentViewedHand = 'LEFT';
+// ------------------
+
 async function refreshCameras() {
     console.log("Scanning for hardware names...");
     // receives a list of objects: [{index: 0, name: "C922..."}, ...]
@@ -59,10 +63,64 @@ function updateCamera() {
 async function launch(mode) {
     hideAll();
     document.querySelector('#main-controls').style.display = 'block';
-    document.querySelector('#ui-mode-text').innerText = mode;
     
-    // Call Python to change mode
+    // Update the UI text (Make sure this exists in your HTML)
+    const modeText = document.querySelector('#ui-mode-text');
+    if(modeText) modeText.innerText = mode;
+
+    // 1. Handle Button Highlighting for ARM/MUTE
+    const armBtn = document.querySelector('#btn-arm');
+    const muteBtn = document.querySelector('#btn-mute');
+    
+    armBtn.classList.toggle('active', mode === 'ARM');
+    muteBtn.classList.toggle('active', mode === 'MUTE');
+    
+    // 2. Reset the Gesture Guide to Left Hand
+    switchHand('LEFT'); 
+    
+    // 3. Update the backend
     await eel.change_mode(mode)();
+}
+
+function switchHand(hand) {
+    const leftBtn = document.querySelector('#toggle-l');
+    const rightBtn = document.querySelector('#toggle-r');
+    const display = document.querySelector('#gif-display');
+    const label = document.querySelector('#hand-label');
+    const mode = document.querySelector('#ui-mode-text').innerText;
+
+    // 1. Toggle active class for visual feedback
+    if (hand === 'LEFT') {
+        leftBtn.classList.add('active');
+        rightBtn.classList.remove('active');
+    } else {
+        rightBtn.classList.add('active');
+        leftBtn.classList.remove('active');
+    }
+
+    // 2. Update Label
+    label.innerText = hand + " HAND";
+
+    // 3. Reset and Update Image Source
+    // Adding ?t= and a timestamp forces the GIF to restart from the beginning
+    const timestamp = Date.now();
+    display.src = `media/${mode}MODE${hand}.gif?t=${timestamp}`;
+}
+
+function toggleGifs() {
+    const container = document.querySelector('#gif-container');
+    const btn = document.querySelector('#gif-toggle-btn');
+    const warning = document.querySelector('#camera-warning');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        warning.style.display = 'none';
+        btn.innerText = "HIDE GESTURE GUIDE";
+    } else {
+        container.style.display = 'none';
+        btn.innerText = "SHOW GESTURE GUIDE";
+        warning.style.display = 'block';
+    }
 }
 
 async function startCalib() {
@@ -149,6 +207,16 @@ function stopApp() {
 function showSettings() {
     hideAll();
     let settings = document.querySelector('#settings-screen');
+    settings.style.display = 'block';
+    // Trigger a tiny delay or use void offset to restart the animation
+    void settings.offsetWidth; 
+    settings.classList.add('screen-animate'); // Re-add the class to trigger the pop
+    eel.change_mode('OFF')();
+}
+
+function showTbshoot() {
+    hideAll();
+    let settings = document.querySelector('#tbshoot-screen');
     settings.style.display = 'block';
     // Trigger a tiny delay or use void offset to restart the animation
     void settings.offsetWidth; 

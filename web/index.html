@@ -9,11 +9,11 @@
     <div class="container">
         <div id="welcome-screen" class="screen">
             <h1 class="glow-text">FL Gesture Controller</h1>
-            <p>A Virtual MIDI Controller</p>
+            <p><i>A Hand Gesture Virtual MIDI Controller</i></p>
 
             <div id="midi-warning" class="warning-box" style="display:none;">
                 <p>⚠️ <b>loopMIDI Port Not Detected</b></p>
-                <p>Please create a port named: <span style="color:var(--fl-pink);">TestingFLPLSOMG</span></p>
+                <p>Please create a port named: '<span style="color:var(--fl-pink);">FL-Gesture-Port-BETA</span>'</p>
                 <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank" class="download-link">Download loopMIDI</a>
             </div>
 
@@ -36,14 +36,24 @@
         <div id="instructions-screen" class="screen" style="display:none;">
             <h2 class="glow-text">SETUP GUIDE</h2>
             <div class="calib-box" style="text-align: left;">
+                <p><b>loopMIDI</b></p>
                 <ol>
-                    <li>(If you haven't already) Download & Install <b>loopMIDI</b> from <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank" style="color:var(--fl-pink);">here</a>.</li>
-                    <li>Open loopMIDI and create a port named: <b style="color:var(--fl-pink);">TestingFLPLSOMG</b>.</li>
-                    <li><b>IMPORTANT:</b> Right-click loopMIDI and <b style="color:var(--fl-pink);">"Run as Administrator".</b></li>
-                    <li>Right-click <i>this app</i> and "Run as Administrator" to ensure MIDI communication isn't blocked.</li>
+                    <li>Download & Install <b>loopMIDI</b> from <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank" style="color:var(--fl-pink);">here</a>.</li>
+                    <li>Right-click loopMIDI and <b style="color:var(--fl-pink);">"Run as Administrator".</b></li>
+                    <li>Create a port named: '<b style="color:var(--fl-pink);">FL-Gesture-Port-BETA</b>' <br><i>(leave this app running in the background).</i></li>
                 </ol>
+                <p><b>FL Studio</b></p>
+                <p>Once the app opens on your web browser:</p>
+                <ol>
+                    <li>(BEFORE OPENING FL Studio) <br>Drag the <code>'Gesture Controller'</code> folder into your <br>FL Studio's Hardware folder (found in <br><code style="color:var(--fl-pink);">'Image-Line\FL Studio\Settings\Hardware'</code>).</li>
+                    <li>Run <b>FL Studio</b> and go to <code>'Options\MIDI Settings'</code>.</li>
+                    <li>Select '<b style="color:var(--fl-pink);">FL-Gesture-Port-BETA</b>' in the Output Window.</li>
+                    <li>In the Input Window, select the same port and set the Controller type to '<b style="color:var(--fl-pink);">Gesture Controller</b>' <i>(if folder is dragged in correctly).</i></li>
+                </ol>
+                <p>You can now use the Gesture Controller!</p>
                 <p style="font-size: 0.8rem; opacity: 0.7;">*Currently in BETA</p>
             </div>
+            <button onclick="showTbshoot()" class="secondary-btn" id="tbshoot-btn">TROUBLESHOOTING</button>
             <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>
         </div>
 
@@ -53,6 +63,21 @@
                 <button onclick="startCalib()" class="secondary-btn">HAND CALIBRATION</button>
                 <button onclick="showColorPicker()" class="secondary-btn">CUSTOMIZE COLORS</button>
                 <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>
+            </div>
+        </div>
+
+        <div id="tbshoot-screen" class="screen" style="display:none;">
+            <h2 class="glow-text">TROUBLESHOOTING</h2>
+            <div class="calib-box" style="text-align: left;">
+                <h3><b><i>The port isn't showing in FL Studio!</i></b></h3>
+                This means the port could not be detected. <br>Please make sure of the following:
+                <ol>
+                    <li>You run the app in the following order: <br>[1] loopMIDI <br>[2] <code>'requirements.bat'</code> (if not yet run) <br>[3] <code>'run.bat'</code> <br>[4] FL Studio</li>
+                    <li>loopMIDI, <code>'requirements.bat'</code> and <code>'run.bat'</code> are <br><b style="color:var(--fl-pink);">Run as Administrator</b>.</li>
+                </ol>
+            </div>
+            <div class="menu-buttons">
+                <button onclick="showInstructions()" class="back-btn">BACK TO INSTRUCTIONS</button>
             </div>
         </div>
 
@@ -79,21 +104,46 @@
         </div>
 
         <div id="main-controls" class="screen" style="display:none;">
-            <h2 class="glow-text">Mode Controller</h2>
+            <h1 class="glow-text">Mode Controller</h1>
             <div class="mode-header">
-                <button onclick="launch('ARM')" id="btn-arm">ARM MODE</button>
-                <button onclick="launch('MUTE')" id="btn-mute">MUTE MODE</button>
+                <button onclick="launch('ARM')" class="mode-btn" id="btn-arm">ARM MODE</button>
+                <button onclick="launch('MUTE')" class="mode-btn" id="btn-mute">MUTE MODE</button>
             </div>
+
+            <div class="instruction-toggle-container">
+                <button onclick="toggleGifs()" id="gif-toggle-btn" class="small-btn">SHOW GESTURE GUIDE</button>
+            </div>
+
+            <div id="gif-container" style="display:none; margin-top: 15px; animation: fadeIn 0.5s ease-in-out;">
+                <div class="hand-toggle-container">
+                    <button onclick="switchHand('LEFT')" id="toggle-l" class="small-btn active">L</button>
+                    <button onclick="switchHand('RIGHT')" id="toggle-r" class="small-btn">R</button>
+                </div>
+                
+                <div class="gif-viewer">
+                    <p id="hand-label" style="font-size: 0.7rem; color: gray; margin-bottom: 5px;">LEFT HAND</p>
+                    <img id="gif-display" src="" width="330" style="border-radius: 10px; border: 2px solid var(--fl-pink);">
+                </div>
+            </div>
+
             <div class="status-box">
                 <p>Status: <span id="ui-mode-text">ACTIVE</span></p>
-                <button onclick="showMenu()" class="back-btn">MAIN MENU</button>
             </div>
+            <div id="camera-warning" class="warning-box">
+                <h2>⚠️<b>Just a heads up...</b>⚠️</h2>
+                <h3>Please <b>DO NOT <span style="color:var(--fl-pink);">close (X) the camera tab.</span></b></h3>
+                <p><i>This will stop the app; You will have to run the app again. (See console)</i></p>
+                <p><i>The camera will turn off when you return to the main menu.</i></p>
+                <p>Thank you for your patience!</p>
+                <h3><b style="color:var(--fl-pink);">Happy recording!</b></h3>
+            </div>
+            <button onclick="showMenu()" class="back-btn">MAIN MENU</button>
         </div>
 
         <div id="confirm-exit-screen" class="screen" style="display:none;">
             <h2 class="glow-text">Heading out?</h2>
             <div class="confirm-box">
-                <p class="confirm-msg">Your calibration settings <i style="color:var(--fl-pink);">will not be saved.</i></p>
+                <p class="confirm-msg">Your calibration and UI settings <i style="color:var(--fl-pink);">will not be saved.</i></p>
                 <p class="confirm-msg">You will have to recalibrate when you next open the app.</p>
             </div>
             <button onclick="showMenu()" class="back-btn">BACK TO MENU</button>

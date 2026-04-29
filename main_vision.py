@@ -112,7 +112,7 @@ def stop_application():
 # [3] MAIN VISION LOOP
 def start_vision():
     state.cap = cv2.VideoCapture(state.camera_index)
-    midi_handler = MidiManager('TestingFLPLSOMG')
+    midi_handler = MidiManager('FL-Gesture-Port-BETA')
     
     # Setup MediaPipe
     mp_hands = mp.solutions.hands
@@ -164,8 +164,15 @@ def start_vision():
         results = hand_tracker.process(rgb_frame)
 
         if results.multi_hand_landmarks:
+            processed_labels = set()
+
             for hand_idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
-                hand_handedness = results.multi_handedness[hand_idx].classification[0].label
+                label = results.multi_handedness[hand_idx].classification[0].label
+
+                if label not in processed_labels:
+                    processed_labels.add(label)
+
+                hand_handedness = label
                 gesture_label = ""
 
                 # [1] RUN LOGIC ENGINE

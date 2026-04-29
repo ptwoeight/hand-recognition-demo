@@ -15,6 +15,10 @@ body {
     height: 100vh;
 }
 
+ol {
+    font-size: small;
+}
+
 .container {
     background: var(--panel-bg);
     padding: 3rem;
@@ -113,6 +117,16 @@ button:hover {
     animation: fadeIn 0.5s ease-in-out;
 }
 
+#camera-warning {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid #767676;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -155,4 +169,29 @@ button:hover {
 
 .screen-animate {
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.hand-toggle-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px auto;
+    width: 50%; /* Makes the buttons smaller by limiting the container width */
+}
+
+.hand-toggle-container button {
+    flex: 1; /* Ensures both buttons are the same width */
+    padding: 8px; /* Smaller padding than your main buttons */
+    font-size: 0.9rem;
+}
+
+.hand-toggle-container button.active {
+    border: 1px solid var(--fl-pink);
+    background: rgba(222, 29, 93, 0.2);
+}
+
+.mode-btn.active {
+    border: 1px solid var(--fl-pink);
+    background: rgba(222, 29, 93, 0.3); /* Slightly stronger for the main mode */
+    box-shadow: 0 0 10px rgba(222, 29, 93, 0.4);
 }

@@ -11,7 +11,7 @@ except Exception as e:
     print(f"[ERROR] Pygame fallback failed: {e}")
 
 class MidiManager:
-    def __init__(self, port_substring='FLGesture'):
+    def __init__(self, port_substring='FL-Gesture-Port-BETA'):
         self.port_name = port_substring
         self.output = None
         self.active_insert = 1 # Default track

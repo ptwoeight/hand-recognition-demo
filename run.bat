@@ -22,6 +22,24 @@ if not %errorLevel% == 0 (
     exit /b
 )
 
+:check_config
+:: [NEW] Check if config exists
+if exist "%~dp0.browser_cfg" (
+    set /p last_browser=<"%~dp0.browser_cfg"
+    :: Remove trailing spaces if any
+    set "last_browser=!last_browser: =!"
+    echo %PINK%====================================================
+    echo    RECENT CONFIGURATION FOUND
+    echo ====================================================%RESET%
+    echo %GRAY%Last used browser: %PINK%!last_browser!%RESET%
+    echo.
+    set /p use_last="Use this browser? (Y/N): "
+    if /i "!use_last!"=="Y" (
+        set "b_key=!last_browser!"
+        goto start_app
+    )
+)
+
 :menu
 cls
 echo %PINK%====================================================
@@ -72,6 +90,7 @@ if not %errorLevel% == 0 (
 :: Save choice to temp file in the project directory
 echo %b_key% > "%~dp0.browser_cfg"
 
+:start_app
 echo.
 echo %PINK%~SUCCESS~%RESET% Starting application in %PINK%!b_key!%RESET%
 echo %GRAY%================================================================================%RESET%
